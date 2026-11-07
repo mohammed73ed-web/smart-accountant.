@@ -1,21 +1,28 @@
 {
-  "name": "smart-accountant",
-  "version": "1.0.2",
-  "description": "تطبيق المحاسب الذكي لإدارة الحسابات والحركات والتقارير",
+  "name": "onyx-smart-accounting",
+  "version": "1.1.0",
+  "description": "ONYX Smart Accounting - Arabic-first local accounting application",
   "main": "main.js",
-  "author": "Smart Accountant",
+  "author": "ONYX Smart Accounting",
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win nsis --publish never"
+    "build": "electron-builder --win nsis --publish never",
+    "prepare:web": "node -e \"const fs=require('fs');fs.mkdirSync('www',{recursive:true});fs.copyFileSync('smart-accountant.html','www/index.html');\"",
+    "build:android": "npm run prepare:web && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.4.3"
   },
   "devDependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/cli": "^7.4.3",
     "electron": "^35.0.0",
     "electron-builder": "^26.0.12"
   },
   "build": {
-    "appId": "com.smartaccountant.desktop",
-    "productName": "Smart Accountant",
+    "appId": "com.onyx.smartaccounting",
+    "productName": "ONYX Smart Accounting",
     "directories": {
       "output": "dist"
     },
@@ -28,9 +35,7 @@
       "target": [
         {
           "target": "nsis",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         }
       ]
     },
