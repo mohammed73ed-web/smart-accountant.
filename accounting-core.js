@@ -40,7 +40,7 @@
   }
   function validateEntry(entry, chart) {
     var map = validateChart(chart || DEFAULT_ACCOUNTS);
-    if (!entry || !/^\d{4}-\d{2}-\d{2}$/.test(String(entry.date || "")) || isNaN(Date.parse(entry.date))) fail("تاريخ القيد غير صالح");
+    if (!entry || !/^\d{4}-\d{2}-\d{2}$/.test(String(entry.date || "")) || isNaN(Date.parse(entry.date)) || new Date(entry.date + "T00:00:00Z").toISOString().slice(0, 10) !== entry.date) fail("تاريخ القيد غير صالح");
     if (!Array.isArray(entry.lines) || entry.lines.length < 2) fail("القيد يجب أن يحتوي على سطرين على الأقل");
     var totals = Object.create(null);
     entry.lines.forEach(function (line) {
@@ -59,6 +59,9 @@
   }
   function trialBalance(entries, chart, currency) {
     var map = validateChart(chart || DEFAULT_ACCOUNTS), result = {};
+    var usedCurrencies = new Set();
+    (entries || []).forEach(function (entry) { if (entry.status === "posted") entry.lines.forEach(function (line) { usedCurrencies.add(line.currency); }); });
+    if (!currency && usedCurrencies.size > 1) fail("حدد العملة عند إعداد ميزان المراجعة متعدد العملات");
     map.forEach(function (a, code) { result[code] = { code: code, name: a.name, type: a.type, debit: 0, credit: 0, balance: 0 }; });
     (entries || []).forEach(function (entry) {
       if (entry.status !== "posted") return;
