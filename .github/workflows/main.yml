@@ -12,18 +12,36 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout source (use safe Windows path)
+        uses: actions/checkout@v4
         with:
-          node-version: 20
-      - run: npm install
-      - run: npm run build
-      - uses: actions/upload-artifact@v4
+          path: source
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+
+      - name: Install dependencies
+        working-directory: source
+        run: npm install
+
+      - name: Build Windows installer
+        working-directory: source
+        run: npm run build
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
         with:
           name: SmartAccountant-Windows
-          path: dist/*.exe
+          path: source/dist/*.exe
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.exe
+          files: source/dist/*.exe
