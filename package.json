@@ -8,8 +8,9 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win nsis --publish never",
-    "prepare:web": "node -e \"const fs=require('fs');fs.mkdirSync('www',{recursive:true});fs.copyFileSync('smart-accountant.html','www/index.html');\"",
-    "build:android": "npm run prepare:web && npx cap sync android"
+    "prepare:web": "node -e \"const fs=require('fs');fs.mkdirSync('www',{recursive:true});for(const f of ['smart-accountant.html','accounting-core.js'])fs.copyFileSync(f,'www/'+(f==='smart-accountant.html'?'index.html':f));\"",
+    "build:android": "npm run test && npm run prepare:web && npx cap sync android",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "@capacitor/core": "^7.4.3"
@@ -29,13 +30,16 @@
     "files": [
       "main.js",
       "smart-accountant.html",
+      "accounting-core.js",
       "package.json"
     ],
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
