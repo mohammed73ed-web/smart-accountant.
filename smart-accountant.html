@@ -47,11 +47,12 @@ td.n,th.n{text-align:left;font-variant-numeric:tabular-nums}
 </head>
 <body>
 <div class="app"><nav id="nav"></nav><main id="main"></main></div>
+<script src="accounting-core.js"></script>
 <script>
 var KEY="smart-accountant-v1";
 var S=load();
 var ui={tab:"acc",rep:{acc:"all",cur:"",q:""},msg:""};
-function def(){return{accounts:[],tx:[],currencies:[{code:"USD",name:"دولار",sub:"سنتاً",dec:2}],cats:["ديون","مصروفات أسرية","نفقات تجارية","إيجارات"],acats:["عملاء","موردون","أقارب","موظفون","مصروفات شخصية"],footer:"",hide:false}}
+function def(){return{accounts:[],tx:[],journals:[],currencies:[{code:"USD",name:"دولار",sub:"سنتاً",dec:2}],cats:["ديون","مصروفات أسرية","نفقات تجارية","إيجارات"],acats:["عملاء","موردون","أقارب","موظفون","مصروفات شخصية"],footer:"",hide:false}}
 function load(){try{var r=localStorage.getItem(KEY);if(r)return Object.assign(def(),JSON.parse(r))}catch(e){}return def()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
@@ -72,9 +73,9 @@ function eff(t,id){var v=Number(t.amt);if(t.type==="قبض"||t.type==="إيدا�
 function bal(id,code){var s=0;S.tx.forEach(function(t){if(t.cur!==code)return;var e=eff(t,id);if(e)s+=e.cr-e.dr});return s}
 function balHtml(id){var out=S.currencies.map(function(c){var b=bal(id,c.code);return b?'<span class="'+(b<0?"dr":"cr")+'">'+fmt(Math.abs(b),c)+" "+esc(c.code)+(b<0?" (عليه)":" (له)")+"</span>":""}).filter(Boolean);return out.length?out.join("<br>"):"—"}
 /* الواجهة */
-function nav(){var t=[["acc","قائمة الحسابات"],["tx","الحركات"],["rep","التقارير"],["set","الإعدادات"]];document.getElementById("nav").innerHTML="<h1>محاسب الذكي</h1>"+t.map(function(x){return'<button class="'+(ui.tab===x[0]?"on":"")+'" onclick="go(\''+x[0]+'\')">'+x[1]+"</button>"}).join("")}
+function nav(){var t=[["acc","الحسابات"],["tx","الحركات"],["journal","قيود اليومية"],["trial","ميزان المراجعة"],["rep","التقارير"],["set","الإعدادات"]];document.getElementById("nav").innerHTML="<h1>محاسب الذكي</h1>"+t.map(function(x){return'<button class="'+(ui.tab===x[0]?"on":"")+'" onclick="go(\''+x[0]+'\')">'+x[1]+"</button>"}).join("")}
 function go(t){ui.tab=t;ui.msg="";render()}
-function render(){nav();var m=document.getElementById("main");m.innerHTML=({acc:vAcc,tx:vTx,rep:vRep,set:vSet})[ui.tab]();if(ui.tab==="tx")preview()}
+function render(){nav();var m=document.getElementById("main");m.innerHTML=({acc:vAcc,tx:vTx,journal:vJournal,trial:vTrial,rep:vRep,set:vSet})[ui.tab]();if(ui.tab==="tx")preview()}
 function opts(arr,sel){return arr.map(function(x){return'<option value="'+esc(x[0])+'"'+(x[0]===sel?" selected":"")+">"+esc(x[1])+"</option>"}).join("")}
 function accOpts(sel){return opts(S.accounts.map(function(a){return[a.id,a.name]}),sel)}
 function vAcc(){
@@ -94,6 +95,26 @@ function toggleTo(){document.getElementById("tol").style.display=document.getEle
 function preview(){var m=document.getElementById("tm"),w=document.getElementById("tw");if(!m||!w)return;w.textContent=tafqeet(m.value,cur(document.getElementById("tc").value))}
 function addTx(){var v=parseFloat(document.getElementById("tm").value);if(!(v>0)){alert("أدخل مبلغاً صحيحاً.");return}var type=document.getElementById("tt").value,a=document.getElementById("ta").value,b=document.getElementById("tb").value;if(type==="تحويل"&&a===b){alert("اختر حسابين مختلفين للتحويل.");return}S.tx.push({id:uid(),date:document.getElementById("td").value,type:type,acc:a,to:type==="تحويل"?b:"",cur:document.getElementById("tc").value,amt:v,cat:document.getElementById("tg").value,note:document.getElementById("tn").value});save();render()}
 function delTx(id){S.tx=S.tx.filter(function(t){return t.id!==id});save();render()}
+/* القيود المحاسبية المزدوجة */
+function vJournal(){
+var chart=OnyxAccounting.defaultAccounts;
+var options=chart.filter(function(a){return a.parent;}).map(function(a){return[a.code,a.code+" - "+a.name]});
+var rows=(S.journals||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);}).map(function(j){return "<tr><td>"+esc(j.date)+"</td><td>"+esc(j.reference)+"</td><td>"+esc(j.memo)+"</td><td>"+esc(j.lines[0].accountCode)+"</td><td>"+esc(j.lines[1].accountCode)+"</td><td class=n>"+fmt(j.lines[0].debit,cur(j.lines[0].currency))+" "+esc(j.lines[0].currency)+"</td></tr>"}).join("");
+return "<h2>قيود اليومية — القيد المزدوج</h2><div class=card><div class=words>يسجل كل قيد طرفاً مديناً وطرفاً دائناً بالقيمة نفسها. لا يسمح النظام بترحيل قيد غير متوازن.</div><div class=row><label>التاريخ<input id=jd type=date value='"+new Date().toISOString().slice(0,10)+"'></label><label>رقم المرجع<input id=jr placeholder='JV-0001'></label><label>الحساب المدين<select id=ja>"+opts(options,"1100")+"</select></label><label>الحساب الدائن<select id=jb>"+opts(options,"3100")+"</select></label><label>العملة<select id=jc>"+opts(S.currencies.map(function(x){return[x.code,x.code+" - "+x.name]}),"USD")+"</select></label><label>المبلغ<input id=jm type=number min=0.01 step=0.01></label><label>البيان<input id=jnote></label><button class=b onclick=postJournal()>ترحيل القيد</button></div></div><div class=card tw>"+(rows?"<table><tr><th>التاريخ</th><th>المرجع</th><th>البيان</th><th>مدين</th><th>دائن</th><th>المبلغ</th></tr>"+rows+"</table>":"<div class=empty>لا توجد قيود يومية مرحّلة.</div>")+"</div>";
+}
+function postJournal(){
+var amount=Number(document.getElementById("jm").value),debit=document.getElementById("ja").value,credit=document.getElementById("jb").value,currency=document.getElementById("jc").value;
+if(!(amount>0)||!Number.isFinite(amount)){alert("أدخل مبلغاً موجباً وصحيحاً.");return}
+if(debit===credit){alert("يجب اختيار حسابين مختلفين.");return}
+var j={id:uid(),date:document.getElementById("jd").value,reference:document.getElementById("jr").value.trim()||("JV-"+Date.now()),memo:document.getElementById("jnote").value.trim(),status:"posted",lines:[{accountCode:debit,debit:amount,credit:0,currency:currency},{accountCode:credit,debit:0,credit:amount,currency:currency}]};
+try{OnyxAccounting.validateEntry(j);S.journals=S.journals||[];S.journals.push(j);save();render()}catch(e){alert(e.message||"تعذر ترحيل القيد.")}
+}
+function vTrial(){
+var currency=ui.trialCurrency||"USD",rows=OnyxAccounting.trialBalance(S.journals||[],OnyxAccounting.defaultAccounts,currency).filter(function(r){return r.debit||r.credit});
+var body=rows.map(function(r){return "<tr><td>"+esc(r.code)+"</td><td>"+esc(r.name)+"</td><td class=n>"+fmt(r.debit,cur(currency))+"</td><td class=n>"+fmt(r.credit,cur(currency))+"</td><td class=n>"+fmt(Math.abs(r.balance),cur(currency))+(r.balance<0?" دائن":r.balance>0?" مدين":"")+"</td></tr>"}).join("");
+var debit=rows.reduce(function(n,r){return n+r.debit},0),credit=rows.reduce(function(n,r){return n+r.credit},0);
+return "<h2>ميزان المراجعة</h2><div class=card><div class=row><label>العملة<select onchange='ui.trialCurrency=this.value;render()'>"+opts(S.currencies.map(function(x){return[x.code,x.name+" ("+x.code+")"]}),currency)+"</select></label></div><div class=tot><div>إجمالي المدين: <b>"+fmt(debit,cur(currency))+"</b></div><div>إجمالي الدائن: <b>"+fmt(credit,cur(currency))+"</b></div><div class=words>"+(Math.abs(debit-credit)<0.00000001?"الميزان متوازن":"تحذير: الميزان غير متوازن")+"</div></div></div><div class=card tw>"+(body?"<table><tr><th>الرمز</th><th>الحساب</th><th>مدين</th><th>دائن</th><th>الرصيد</th></tr>"+body+"</table>":"<div class=empty>لا توجد قيود مرحّلة لهذه العملة.</div>")+"</div>";
+}
 /* التقارير */
 function rows(){var r=ui.rep,out=[],run={};S.tx.slice().sort(function(a,b){return a.date<b.date?-1:1}).forEach(function(t){if(r.cur&&t.cur!==r.cur)return;var ids=r.acc==="all"?[t.acc].concat(t.to?[t.to]:[]):[r.acc];ids.forEach(function(id){var e=eff(t,id);if(!e)return;var k=r.acc==="all"?id+"|"+t.cur:t.cur;run[k]=(run[k]||0)+e.cr-e.dr;out.push({t:t,id:id,dr:e.dr,cr:e.cr,bal:run[k]})})});
 var q=r.q.trim();if(q)out=out.filter(function(x){return[x.t.note,x.t.cat,x.t.type,(acc(x.id)||{}).name,x.t.date].join(" ").indexOf(q)>-1});return out}
