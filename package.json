@@ -1,13 +1,13 @@
 {
   "name": "smart-accountant",
-  "version": "1.0.1",
-  "description": "تطبيق محاسب الذكي",
+  "version": "1.0.2",
+  "description": "تطبيق المحاسب الذكي لإدارة الحسابات والحركات والتقارير",
   "main": "main.js",
   "author": "Smart Accountant",
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win nsis"
+    "build": "electron-builder --win nsis --publish never"
   },
   "devDependencies": {
     "electron": "^35.0.0",
