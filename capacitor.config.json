@@ -1,0 +1,6 @@
+{
+  "appId": "com.onyx.smartaccounting",
+  "appName": "ONYX Smart Accounting",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
