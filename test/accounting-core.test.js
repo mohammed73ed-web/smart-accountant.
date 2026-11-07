@@ -57,3 +57,16 @@ test("calculates running general ledger balance", () => {
   assert.equal(rows.length, 1);
   assert.equal(rows[0].balance, 1000);
 });
+
+test("rejects impossible calendar dates", () => {
+  const bad = structuredClone(entry);
+  bad.date = "2026-02-31";
+  assert.throws(() => A.validateEntry(bad), /تاريخ القيد غير صالح/);
+});
+
+test("requires a currency when trial balance spans multiple currencies", () => {
+  const other = structuredClone(entry);
+  other.id = "J-002";
+  other.lines.forEach(line => { line.currency = "YER"; });
+  assert.throws(() => A.trialBalance([entry, other]), /حدد العملة/);
+});
