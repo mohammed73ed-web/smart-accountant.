@@ -27,7 +27,7 @@
     if (!Array.isArray(accounts) || !accounts.length) fail("دليل الحسابات فارغ أو غير صالح");
     var map = new Map();
     accounts.forEach(function (a) {
-      if (!a || !/^\\d{3,12}$/.test(String(a.code)) || !String(a.name || "").trim()) fail("بيانات حساب غير صالحة");
+      if (!a || !/^\d{3,12}$/.test(String(a.code)) || !String(a.name || "").trim()) fail("بيانات حساب غير صالحة");
       if (map.has(a.code)) fail("رمز حساب مكرر: " + a.code);
       if (["asset", "liability", "equity", "income", "expense"].indexOf(a.type) < 0) fail("نوع حساب غير صالح: " + a.code);
       map.set(a.code, a);
@@ -40,7 +40,7 @@
   }
   function validateEntry(entry, chart) {
     var map = validateChart(chart || DEFAULT_ACCOUNTS);
-    if (!entry || !/^\\d{4}-\\d{2}-\\d{2}$/.test(String(entry.date || "")) || isNaN(Date.parse(entry.date))) fail("تاريخ القيد غير صالح");
+    if (!entry || !/^\d{4}-\d{2}-\d{2}$/.test(String(entry.date || "")) || isNaN(Date.parse(entry.date))) fail("تاريخ القيد غير صالح");
     if (!Array.isArray(entry.lines) || entry.lines.length < 2) fail("القيد يجب أن يحتوي على سطرين على الأقل");
     var totals = Object.create(null);
     entry.lines.forEach(function (line) {
