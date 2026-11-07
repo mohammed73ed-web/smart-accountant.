@@ -1,64 +1,95 @@
-name: Build Windows EXE
+name: ONYX Smart Accounting - Windows and Android builds
 
 on:
   push:
     branches: [main]
-    tags: ['v*']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  windows:
+    name: Build Windows installer
     runs-on: windows-latest
     steps:
       - name: Clone source (repository name ends in a dot)
         shell: pwsh
         run: git clone --depth 1 "https://github.com/${{ github.repository }}.git" source
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Validate application files and JavaScript syntax
+          cache: npm
+          cache-dependency-path: source/package.json
+      - name: Validate source
         working-directory: source
         shell: pwsh
         run: |
-          if (!(Test-Path "package.json")) { throw "package.json is missing" }
-          if (!(Test-Path "main.js")) { throw "main.js is missing" }
-          if (!(Test-Path "smart-accountant.html")) { throw "smart-accountant.html is missing" }
-          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); console.log('package.json is valid')"
+          if (!(Test-Path "package.json")) { throw "package.json missing" }
+          if (!(Test-Path "main.js")) { throw "main.js missing" }
+          if (!(Test-Path "smart-accountant.html")) { throw "smart-accountant.html missing" }
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"
           node --check main.js
           $html = Get-Content "smart-accountant.html" -Raw
           $match = [regex]::Match($html, '(?s)<script>(.*?)</script>')
-          if (!$match.Success) { throw "Application script was not found in smart-accountant.html" }
+          if (!$match.Success) { throw "Application script missing" }
           Set-Content -Path "app-check.js" -Value $match.Groups[1].Value -Encoding utf8
           node --check app-check.js
-          Remove-Item "app-check.js"
-          Write-Host "All required entry files and JavaScript syntax checks passed."
-
+          Remove-Item app-check.js
       - name: Install dependencies
         working-directory: source
         run: npm install --no-audit --no-fund
-
-      - name: Build Windows installer (disable implicit GitHub publishing)
+      - name: Build installer
         working-directory: source
         run: npm run build
-
-      - name: Verify installer exists
+      - name: Verify installer
         working-directory: source
         shell: pwsh
         run: |
           $files = Get-ChildItem "dist/*Setup*.exe"
-          if (!$files) { throw "Windows setup EXE was not produced" }
+          if (!$files) { throw "Windows Setup EXE was not produced" }
           $files | ForEach-Object { Write-Host "$($_.Name) - $($_.Length) bytes" }
-
-      - name: Upload Windows installer
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: SmartAccountant-Windows
+          name: ONYX-Windows-Installer
           path: source/dist/*Setup*.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone source (repository name ends in a dot)
+        run: git clone --depth 1 "https://github.com/${{ github.repository }}.git" source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: source/package.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Install dependencies and prepare Android project
+        working-directory: source
+        run: |
+          npm install --no-audit --no-fund
+          npm run prepare:web
+          npx cap add android
+          npx cap sync android
+      - name: Build installable debug APK
+        working-directory: source/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+      - name: Verify APK
+        working-directory: source
+        run: test -s android/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ONYX-Android-APK
+          path: source/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
