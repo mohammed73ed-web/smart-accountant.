@@ -26,8 +26,11 @@ jobs:
           if (!(Test-Path "package.json")) { throw "package.json missing" }
           if (!(Test-Path "main.js")) { throw "main.js missing" }
           if (!(Test-Path "smart-accountant.html")) { throw "smart-accountant.html missing" }
+          if (!(Test-Path "accounting-core.js")) { throw "accounting-core.js missing" }
+          if (!(Test-Path "test/accounting-core.test.js")) { throw "accounting tests missing" }
           node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"
           node --check main.js
+          node --check accounting-core.js
           $html = Get-Content "smart-accountant.html" -Raw
           $match = [regex]::Match($html, '(?s)<script>(.*?)</script>')
           if (!$match.Success) { throw "Application script missing" }
