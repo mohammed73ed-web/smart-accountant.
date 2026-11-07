@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: onyx-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   windows:
     name: Build Windows installer
