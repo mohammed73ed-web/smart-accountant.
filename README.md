@@ -1,31 +1,40 @@
 # ONYX Smart Accounting
 
-Arabic-first local accounting application. The current repository contains the initial Smart Accountant web/Electron application and a GitHub Actions pipeline that packages the current app for Windows and Android.
+Arabic-first offline desktop/mobile accounting app. The current build includes the original cash/account tracking screens plus an initial double-entry journal engine, a starter chart of accounts, and a currency-specific trial balance.
 
-## Build monitoring
+## Build and verification
 
-Open **Actions** to view the Windows and Android jobs:
+GitHub Actions builds Windows NSIS setup and Android debug APK:
 https://github.com/mohammed73ed-web/smart-accountant./actions
 
-Artifacts are attached to a successful workflow run:
-- ONYX-Windows-Installer
-- ONYX-Android-APK
+Every build runs Node.js tests for the double-entry engine. Artifacts are attached to successful runs:
+- `ONYX-Windows-Installer`
+- `ONYX-Android-APK`
 
-## Local build
+## Included now
 
-Requirements: Node.js 22, Java 21 and Android SDK for Android builds; Windows for the Windows installer.
+- Arabic RTL interface with local-first operation and no mandatory login.
+- Existing account and cash-movement screens.
+- Initial double-entry journal posting (two-line entry), rejects unbalanced postings.
+- Starter chart of accounts.
+- Trial balance by selected currency.
+- General-ledger and trial-balance calculation functions in `accounting-core.js`.
+- Backup/restore validation and CSV text export.
+- Windows and Android packaging workflows.
 
-```bash
-npm install
-npm start
-npm run build
-npm run prepare:web
-npx cap add android
-npx cap sync android
-cd android
-./gradlew assembleDebug
-```
+## Not yet a complete ERP
 
-## Important implementation status
+This repository is **not yet a production-ready FULL ERP**. In particular, the following remain to be implemented and tested before that claim is justified:
 
-The current application is an initial accounting application, not yet the complete FULL ERP specification. The build workflow proves packaging of the current source only. Accounting modules, SQLite persistence, inventory, sales/purchases, double-entry posting, reports, backup/restore and device-to-device local synchronization must be implemented and tested before declaring the ERP complete.
+- Multi-line journal editor, journal approval/reversal, fiscal periods and closing.
+- Full chart-of-accounts management and mapping from all source documents to journal entries.
+- SQLite persistence and schema migrations (the current UI still stores data in browser local storage).
+- Sales, purchases, invoices, returns, customer/supplier subledgers and credit limits.
+- Inventory warehouses, stock movements, costing (FIFO/weighted average) and stock valuation.
+- Cash/bank reconciliation, receipts/payments, expenses, budgets and installments.
+- Tax configuration, fixed assets and depreciation.
+- Balance sheet, income statement, cash-flow statement and aged receivables/payables.
+- Robust backup files, restore migration and encrypted/device-to-device sync.
+- Automated end-to-end tests on actual Windows and Android devices.
+
+A successful packaging workflow only confirms that installers were generated; it does not certify the complete ERP feature set or guarantee zero defects.
