@@ -34,6 +34,7 @@ jobs:
           Set-Content -Path "app-check.js" -Value $match.Groups[1].Value -Encoding utf8
           node --check app-check.js
           Remove-Item app-check.js
+          node --test test/*.test.js
       - name: Install dependencies
         working-directory: source
         run: npm install --no-audit --no-fund
@@ -89,6 +90,7 @@ jobs:
         working-directory: source
         run: |
           npm install --no-audit --no-fund
+          npm test
           npm run prepare:web
           npx cap add android
           npx cap sync android
